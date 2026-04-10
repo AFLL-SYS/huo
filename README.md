@@ -1,1 +1,703 @@
-# huo
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AFLL | 全栈工程师</title>
+  <meta name="description" content="AFLL - 全栈工程师 & 开源贡献者">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%238b5cf6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='%230a0a0f' stroke='url(%23g)' stroke-width='3'/%3E%3Cpath d='M38 30 L55 30 L45 48 L58 48 L38 72 L42 52 L30 52 Z' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { accent: '#00d4ff', dark: '#0a0a0f', muted: '#71717a' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { --accent: #00d4ff; }
+    html { scroll-behavior: smooth; }
+    body { background: #0a0a0f; color: #fff; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
+    
+    /* 开场动画 - Gemini 风格 */
+    #introOverlay { position: fixed; inset: 0; background: #0a0a0a; z-index: 9999; overflow: hidden; }
+    #introOverlay.hide { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+    #introOverlay.hidden { display: none; }
+    
+    #introCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    
+    .intro-core { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .intro-core-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%; border: 1px solid; opacity: 0; animation: coreRing 2s ease-out forwards; }
+    .intro-core-ring:nth-child(1) { border-color: rgba(255,255,255,0.8); animation-delay: 0s; }
+    .intro-core-ring:nth-child(2) { border-color: rgba(0,212,255,0.6); animation-delay: 0.15s; }
+    .intro-core-ring:nth-child(3) { border-color: rgba(139,92,246,0.4); animation-delay: 0.3s; }
+    @keyframes coreRing { 0% { width: 0; height: 0; opacity: 1; } 100% { width: 400px; height: 400px; opacity: 0; } }
+    
+    .intro-core-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(0,212,255,0.4) 40%, rgba(139,92,246,0.2) 70%, transparent 100%); animation: coreGlow 2s ease-out forwards; }
+    @keyframes coreGlow { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0.3; } }
+    
+    .intro-text-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; opacity: 0; animation: textAppear 1s ease-out 1.2s forwards; }
+    @keyframes textAppear { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); filter: blur(8px); } 60% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); filter: blur(0); } 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); } }
+    
+    .intro-logo { width: 56px; height: 56px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.4)); }
+    .intro-label { font-size: 1.6rem; font-weight: 500; color: #fff; margin-top: 10px; letter-spacing: 0.15em; }
+    .intro-desc { font-size: 0.7rem; color: #666; margin-top: 3px; letter-spacing: 0.25em; text-transform: uppercase; }
+    .intro-desc::before { content: ''; display: block; width: 20px; height: 1px; background: #333; margin: 0 auto 8px; }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    
+    /* 加载 */
+    .page-loader { position: fixed; inset: 0; background: #0a0a0f; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s, visibility 0.3s; }
+    .page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .loader { width: 32px; height: 32px; border: 2px solid #27272a; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+    .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px rgba(0,212,255,0.1); border-color: rgba(0,212,255,0.3); }
+    .text-gradient { background: linear-gradient(135deg, #00d4ff, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .text-glow { text-shadow: 0 0 40px rgba(0,212,255,0.5), 0 0 80px rgba(139,92,246,0.3); }
+    .marquee { display: flex; animation: marquee 25s linear infinite; }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .pulse-ring { position: relative; }
+    .pulse-ring::before { content: ''; position: absolute; inset: -4px; background: rgba(34,197,94,0.4); border-radius: 50%; animation: pulse 2s ease-out infinite; }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2); opacity: 0; } }
+    .link-line::after { content: ''; position: absolute; bottom: -4px; left: 0; width: 0; height: 1px; background: var(--accent); transition: width 0.3s ease; }
+    .link-line:hover::after { width: 100%; }
+    .cursor::after { content: '|'; animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .progress-bar { width: 0; transition: width 1s ease; }
+    .scroll-indicator { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, var(--accent), #8b5cf6); z-index: 100; transition: width 0.1s; }
+    
+    /* Gemini 风格背景 */
+    .gemini-bg { position: fixed; inset: 0; background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0a0a0f 100%); z-index: -1; }
+    .gemini-bg::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139,92,246,0.15) 0%, transparent 60%); }
+    .gemini-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 80% 100%, rgba(0,212,255,0.1) 0%, transparent 50%); }
+    
+    /* 粒子系统 */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle { position: absolute; width: 2px; height: 2px; border-radius: 50%; animation: float linear infinite; }
+    .particle.cyan { background: rgba(0,212,255,0.8); box-shadow: 0 0 6px rgba(0,212,255,0.6); }
+    .particle.purple { background: rgba(139,92,246,0.8); box-shadow: 0 0 6px rgba(139,92,246,0.6); }
+    .particle.white { background: rgba(255,255,255,0.7); box-shadow: 0 0 4px rgba(255,255,255,0.4); }
+    @keyframes float { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-10vh) scale(1); opacity: 0; } }
+    
+    /* 网格背景 */
+    .grid-bg { position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 60px 60px; z-index: 0; }
+    
+    /* Gemini 风格入场光圈 */
+    .hero-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100px;
+      height: 100px;
+      border: 2px solid transparent;
+      border-top-color: rgba(0, 212, 255, 0.8);
+      border-right-color: rgba(139, 92, 246, 0.8);
+      border-radius: 50%;
+      opacity: 0;
+      animation: heroRingIn 2s ease-out forwards;
+    }
+    .hero-ring.delay-1 { animation-delay: 0.3s; width: 150px; height: 150px; animation: heroRingIn 2s ease-out 0.3s forwards; }
+    .hero-ring.delay-2 { animation-delay: 0.6s; width: 200px; height: 200px; animation: heroRingIn 2s ease-out 0.6s forwards; }
+    @keyframes heroRingIn {
+      0% { width: 20px; height: 20px; opacity: 1; border-width: 3px; }
+      70% { opacity: 0.8; }
+      100% { width: 400px; height: 400px; opacity: 0; border-width: 1px; }
+    }
+    .hero-center-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%);
+      border-radius: 50%;
+      opacity: 0;
+      animation: centerGlowIn 1.5s ease-out 0.8s forwards;
+    }
+    @keyframes centerGlowIn {
+      0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(10);
+        opacity: 0.3;
+      }
+    }
+    
+    /* 光晕球体 */
+    .glow-orb { position: fixed; border-radius: 50%; filter: blur(60px); animation: orbFloat ease-in-out infinite; z-index: 0; }
+    .orb-1 { width: 300px; height: 300px; background: rgba(139,92,246,0.15); top: 10%; left: 10%; animation-duration: 8s; }
+    .orb-2 { width: 250px; height: 250px; background: rgba(0,212,255,0.1); bottom: 20%; right: 10%; animation-duration: 10s; animation-delay: -5s; }
+    @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-20px) scale(1.1); } }
+    
+    /* 闪烁星星 */
+    .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star { position: absolute; width: 3px; height: 3px; background: #fff; border-radius: 50%; animation: twinkle 3s ease-in-out infinite; }
+    @keyframes twinkle { 0%,100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 1; transform: scale(1.5); } }
+    
+    /* 移动端菜单动画 */
+    #mobileMenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+    #mobileMenu.show { max-height: 300px; padding: 16px; }
+    
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+      .marquee { font-size: 12px; }
+      h1 { font-size: 2.5rem !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+</head>
+<body class="antialiased">
+  <div class="gemini-bg"></div>
+  <div class="grid-bg"></div>
+  <div class="particles" id="particles"></div>
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="stars" id="stars"></div>
+  <div class="scroll-indicator" id="scrollIndicator"></div>
+  <div class="page-loader" id="loader"><div class="loader"></div></div>
+
+  <!-- 导航 -->
+  <nav class="fixed top-0 w-full z-50 bg-dark/80 backdrop-blur-md border-b border-white/5">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+      <a href="#" class="text-lg sm:text-xl font-semibold hover:opacity-80 transition flex items-center gap-2">
+        <div class="w-6 h-6 sm:w-7 sm:h-7 relative">
+          <svg viewBox="0 0 40 40" class="w-full h-full">
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00d4ff"/>
+                <stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+            <circle cx="20" cy="20" r="18" fill="#0a0a0f" stroke="url(#logoGrad)" stroke-width="2"/>
+            <path d="M14 12 L22 12 L18 20 L24 20 L14 30 L16 24 L12 24 Z" fill="url(#logoGrad)"/>
+            <circle cx="20" cy="20" r="18" fill="none" stroke="url(#logoGrad)" stroke-width="1" stroke-dasharray="2 4" opacity="0.5"/>
+          </svg>
+        </div>
+        <span class="text-gradient">AFLL</span>
+      </a>
+      
+      <div class="hidden md:flex items-center gap-6 sm:gap-8 text-sm">
+        <a href="#projects" class="text-muted hover:text-white transition link-line relative text-sm">项目</a>
+        <a href="#skills" class="text-muted hover:text-white transition link-line relative text-sm">技能</a>
+        <a href="#blog" class="text-muted hover:text-white transition link-line relative text-sm">博客</a>
+        <a href="#about" class="text-muted hover:text-white transition link-line relative text-sm">关于</a>
+        <a href="#contact" class="text-muted hover:text-white transition link-line relative text-sm">联系</a>
+      </div>
+      
+      <button class="md:hidden p-2" id="menuBtn" aria-label="菜单">
+        <i class="fas fa-bars text-lg"></i>
+      </button>
+    </div>
+    
+    <div id="mobileMenu" class="md:hidden bg-dark/95 border-t border-white/5">
+      <div class="px-4 py-2 space-y-2">
+        <a href="#projects" class="block py-2 text-muted hover:text-white text-sm">项目</a>
+        <a href="#skills" class="block py-2 text-muted hover:text-white text-sm">技能</a>
+        <a href="#blog" class="block py-2 text-muted hover:text-white text-sm">博客</a>
+        <a href="#about" class="block py-2 text-muted hover:text-white text-sm">关于</a>
+        <a href="#contact" class="block py-2 text-muted hover:text-white text-sm">联系</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 开场动画 -->
+  <div id="introOverlay" class="fixed inset-0 z-[9999]">
+    <canvas id="introCanvas"></canvas>
+    <div class="intro-core">
+      <div class="intro-core-ring"></div>
+      <div class="intro-core-ring"></div>
+      <div class="intro-core-ring"></div>
+      <div class="intro-core-glow"></div>
+    </div>
+    <div class="intro-text-container">
+      <svg viewBox="0 0 100 100" class="intro-logo" fill="none">
+        <circle cx="50" cy="50" r="45" stroke="url(#introGrad)" stroke-width="2"/>
+        <path d="M35 28 L55 28 L45 50 L60 50 L35 75 L42 58 L30 58 Z" fill="url(#introGrad)"/>
+        <defs>
+          <linearGradient id="introGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00d4ff"/>
+            <stop offset="100%" stop-color="#8b5cf6"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="intro-label">AFLL</div>
+      <div class="intro-desc">Full Stack Engineer</div>
+    </div>
+  </div>
+  
+  <!-- Hero -->
+  <section class="min-h-screen flex items-center justify-center pt-16 sm:pt-20 px-4 relative overflow-hidden">
+    <canvas id="heroCanvas" class="absolute inset-0 pointer-events-none z-10"></canvas>
+    
+    <div class="max-w-2xl mx-auto text-center">
+      <div class="inline-flex items-center gap-2 text-sm text-muted mb-4 sm:mb-6 fade-in">
+        <span class="w-2 h-2 bg-green-500 rounded-full pulse-ring"></span>
+        <span class="text-xs sm:text-sm">Available for work</span>
+      </div>
+      
+      <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 fade-in text-glow" style="animation-delay: 0.1s">
+        你好，我是 <span class="text-gradient">AFLL</span>
+      </h1>
+      
+      <p class="text-lg sm:text-xl text-muted mb-6 sm:mb-8 fade-in cursor" style="animation-delay: 0.2s" id="typed"></p>
+      
+      <p class="text-muted mb-8 sm:mb-10 fade-in text-sm sm:text-base px-4" style="animation-delay: 0.3s">
+        全栈工程师，热衷于构建高性能 Web 应用和开源工具
+      </p>
+      
+      <div class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 fade-in px-4" style="animation-delay: 0.4s">
+        <a href="#projects" class="bg-accent text-black px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium text-sm hover:bg-cyan-300 transition hover:scale-105 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]">
+          <i class="fas fa-rocket mr-1 sm:mr-2"></i><span class="hidden sm:inline">查看项目</span>
+        </a>
+        <a href="#contact" class="bg-zinc-800 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-medium text-sm hover:bg-zinc-700 transition hover:scale-105 border border-zinc-700 hover:border-zinc-500">
+          <i class="fas fa-paper-plane mr-1 sm:mr-2"></i><span class="hidden sm:inline">联系我</span>
+        </a>
+      </div>
+      
+      <div class="overflow-hidden fade-in" style="animation-delay: 0.5s">
+        <div class="marquee text-xs sm:text-sm text-muted py-2">
+          <span class="mx-4 sm:mx-6"><i class="fab fa-react mr-1 sm:mr-2 text-accent"></i>React</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-node mr-1 sm:mr-2 text-accent"></i>Node.js</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-python mr-1 sm:mr-2 text-accent"></i>Python</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-docker mr-1 sm:mr-2 text-accent"></i>Docker</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-aws mr-1 sm:mr-2 text-accent"></i>AWS</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-golang mr-1 sm:mr-2 text-accent"></i>Go</span>
+          <span class="mx-4 sm:mx-6"><i class="fab fa-typescript mr-1 sm:mr-2 text-accent"></i>TypeScript</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 text-muted animate-bounce cursor-pointer" onclick="document.getElementById('stats').scrollIntoView({behavior:'smooth'})">
+      <i class="fas fa-chevron-down text-sm sm:text-base"></i>
+    </div>
+  </section>
+
+  <!-- 数据统计 -->
+  <section id="stats" class="py-12 sm:py-16 border-y border-white/5 bg-zinc-900/30">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+        <div class="text-center fade-in"><div class="text-2xl sm:text-3xl font-bold text-gradient">50+</div><div class="text-muted text-xs sm:text-sm mt-1">开源项目</div></div>
+        <div class="text-center fade-in" style="animation-delay: 0.05s"><div class="text-2xl sm:text-3xl font-bold text-gradient">1k+</div><div class="text-muted text-xs sm:text-sm mt-1">GitHub Stars</div></div>
+        <div class="text-center fade-in" style="animation-delay: 0.1s"><div class="text-2xl sm:text-3xl font-bold text-gradient">10+</div><div class="text-muted text-xs sm:text-sm mt-1">开源贡献</div></div>
+        <div class="text-center fade-in" style="animation-delay: 0.15s"><div class="text-2xl sm:text-3xl font-bold text-gradient">5+</div><div class="text-muted text-xs sm:text-sm mt-1">年经验</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技能 -->
+  <section id="skills" class="py-16 sm:py-24">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center mb-3 sm:mb-4 fade-in">技能栈</h2>
+      <p class="text-muted text-center mb-10 sm:mb-14 fade-in text-sm">技术能力和经验</p>
+      <div class="space-y-4 sm:space-y-5">
+        <div class="fade-in"><div class="flex justify-between mb-1 sm:mb-2"><span class="font-medium text-sm sm:text-base">Frontend</span><span class="text-accent text-sm sm:text-base">95%</span></div><div class="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden"><div class="progress-bar h-full bg-gradient-to-r from-accent to-purple-500 rounded-full" data-width="95%"></div></div></div>
+        <div class="fade-in" style="animation-delay: 0.05s"><div class="flex justify-between mb-1 sm:mb-2"><span class="font-medium text-sm sm:text-base">Backend</span><span class="text-purple-400 text-sm sm:text-base">90%</span></div><div class="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden"><div class="progress-bar h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" data-width="90%"></div></div></div>
+        <div class="fade-in" style="animation-delay: 0.1s"><div class="flex justify-between mb-1 sm:mb-2"><span class="font-medium text-sm sm:text-base">DevOps</span><span class="text-green-400 text-sm sm:text-base">85%</span></div><div class="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden"><div class="progress-bar h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" data-width="85%"></div></div></div>
+        <div class="fade-in" style="animation-delay: 0.15s"><div class="flex justify-between mb-1 sm:mb-2"><span class="font-medium text-sm sm:text-base">Database</span><span class="text-orange-400 text-sm sm:text-base">80%</span></div><div class="h-1.5 sm:h-2 bg-zinc-800 rounded-full overflow-hidden"><div class="progress-bar h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full" data-width="80%"></div></div></div>
+      </div>
+      <div class="mt-8 sm:mt-10 flex flex-wrap justify-center gap-2 fade-in" style="animation-delay: 0.2s">
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">React</span>
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">Next.js</span>
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">TypeScript</span>
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">Node.js</span>
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">Go</span>
+        <span class="px-2 sm:px-3 py-1.5 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400 hover:bg-zinc-700 cursor-pointer">Python</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 项目 -->
+  <section id="projects" class="py-16 sm:py-24 bg-zinc-900/30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center mb-3 sm:mb-4 fade-in">精选项目</h2>
+      <p class="text-muted text-center mb-10 sm:mb-16 fade-in text-sm">一些我引以为豪的作品</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-globe text-accent text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-accent"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">个人官网</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">基于 Next.js 构建的现代化个人主页</p>
+          <div class="flex gap-2 flex-wrap">
+            <span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">Next.js</span>
+            <span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">TypeScript</span>
+          </div>
+        </article>
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.05s">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-box-open text-blue-400 text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-blue-400"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">组件库</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">企业级 React 组件库</p>
+          <div class="flex gap-2 flex-wrap"><span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">React</span></div>
+        </article>
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.1s">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-terminal text-green-400 text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-green-400"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">CLI 工具</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">提升开发效率的脚手架工具</p>
+          <div class="flex gap-2 flex-wrap"><span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">Node.js</span></div>
+        </article>
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.15s">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-robot text-orange-400 text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-orange-400"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">AI 助手</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">基于 LLM 的智能对话系统</p>
+          <div class="flex gap-2 flex-wrap"><span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">Python</span></div>
+        </article>
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.2s">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-database text-pink-400 text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-pink-400"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">数据平台</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">实时数据可视化与分析平台</p>
+          <div class="flex gap-2 flex-wrap"><span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">Go</span></div>
+        </article>
+        <article class="bg-zinc-900 rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.25s">
+          <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <div class="w-10 sm:w-11 h-10 sm:h-11 bg-zinc-800 rounded-lg flex items-center justify-center"><i class="fas fa-mobile-alt text-purple-400 text-lg"></i></div>
+            <a href="#" class="text-muted hover:text-purple-400"><i class="fas fa-external-link-alt"></i></a>
+          </div>
+          <h3 class="text-base sm:text-lg font-semibold mb-1 sm:mb-2">移动应用</h3>
+          <p class="text-muted text-xs sm:text-sm mb-2 sm:mb-3">跨平台移动应用开发</p>
+          <div class="flex gap-2 flex-wrap"><span class="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 sm:py-1 rounded">React Native</span></div>
+        </article>
+      </div>
+      <div class="text-center mt-8 sm:mt-12 fade-in"><a href="https://github.com/afll" target="_blank" class="inline-flex items-center gap-2 text-muted hover:text-white transition text-sm"><span>查看更多项目</span><i class="fas fa-arrow-right"></i></a></div>
+    </div>
+  </section>
+
+  <!-- 博客 -->
+  <section id="blog" class="py-16 sm:py-24">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center mb-3 sm:mb-4 fade-in">技术博客</h2>
+      <p class="text-muted text-center mb-10 sm:mb-16 fade-in text-sm">分享一些技术见解</p>
+      <div class="space-y-3 sm:space-y-4">
+        <article class="bg-zinc-900 rounded-xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in">
+          <div class="flex items-center gap-2 sm:gap-3 text-xs text-muted mb-1 sm:mb-2"><span><i class="far fa-calendar mr-1"></i>2026-03-15</span><span class="text-accent">React</span></div>
+          <h3 class="text-base sm:text-lg font-medium mb-1 sm:mb-2 hover:text-accent transition cursor-pointer">React 19 新特性详解</h3>
+          <p class="text-muted text-xs sm:text-sm">深入了解 React 19 的 Server Components、Actions 等新功能</p>
+        </article>
+        <article class="bg-zinc-900 rounded-xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.05s">
+          <div class="flex items-center gap-2 sm:gap-3 text-xs text-muted mb-1 sm:mb-2"><span><i class="far fa-calendar mr-1"></i>2026-02-28</span><span class="text-purple-400">Node.js</span></div>
+          <h3 class="text-base sm:text-lg font-medium mb-1 sm:mb-2 hover:text-purple-400 transition cursor-pointer">Node.js 性能优化实践</h3>
+          <p class="text-muted text-xs sm:text-sm">从架构到代码层面全面提升 Node.js 应用性能</p>
+        </article>
+        <article class="bg-zinc-900 rounded-xl p-4 sm:p-5 border border-zinc-800 hover-lift fade-in" style="animation-delay: 0.1s">
+          <div class="flex items-center gap-2 sm:gap-3 text-xs text-muted mb-1 sm:mb-2"><span><i class="far fa-calendar mr-1"></i>2026-01-20</span><span class="text-green-400">DevOps</span></div>
+          <h3 class="text-base sm:text-lg font-medium mb-1 sm:mb-2 hover:text-green-400 transition cursor-pointer">Docker 安全最佳实践</h3>
+          <p class="text-muted text-xs sm:text-sm">打造安全可靠的容器化部署方案</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 关于 -->
+  <section id="about" class="py-16 sm:py-24 bg-zinc-900/30">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6">
+      <h2 class="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 fade-in">关于我</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 items-center">
+        <div class="flex justify-center fade-in">
+          <div class="relative">
+            <div class="w-28 sm:w-32 h-28 sm:h-32 relative">
+              <svg viewBox="0 0 100 100" class="w-full h-full">
+                <defs>
+                  <linearGradient id="logoGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#00d4ff"/>
+                    <stop offset="50%" stop-color="#8b5cf6"/>
+                    <stop offset="100%" stop-color="#00d4ff"/>
+                  </linearGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="#0a0a0f" stroke="url(#logoGrad2)" stroke-width="2"/>
+                <path d="M35 28 L55 28 L45 50 L60 50 L35 75 L42 58 L30 58 Z" fill="url(#logoGrad2)" filter="url(#glow)"/>
+                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#logoGrad2)" stroke-width="1" stroke-dasharray="3 6" opacity="0.4">
+                  <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="20s" repeatCount="indefinite"/>
+                </circle>
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div class="fade-in">
+          <p class="text-muted mb-4 sm:mb-5 leading-relaxed text-sm sm:text-base">我是一名热衷于技术探索的<span class="text-white font-medium">全栈工程师</span>，专注于构建高性能 Web 应用。平时喜欢在开源社区贡献代码，关注前端性能和用户体验。</p>
+          <div class="space-y-2 sm:space-y-3 mb-4 sm:mb-5">
+            <div class="flex items-center gap-3 text-muted text-sm"><i class="fas fa-envelope text-accent w-5"></i><a href="mailto:hi@afll.dev" class="hover:text-white transition">hi@afll.dev</a></div>
+            <div class="flex items-center gap-3 text-muted text-sm"><i class="fas fa-map-marker-alt text-accent w-5"></i><span>中国</span></div>
+            <div class="flex items-center gap-3 text-muted text-sm"><i class="fas fa-globe text-accent w-5"></i><a href="https://afll.dev" target="_blank" class="hover:text-white transition">afll.dev</a></div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="px-2 sm:px-3 py-1 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400">TypeScript</span>
+            <span class="px-2 sm:px-3 py-1 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400">React</span>
+            <span class="px-2 sm:px-3 py-1 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400">Node.js</span>
+            <span class="px-2 sm:px-3 py-1 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400">Go</span>
+            <span class="px-2 sm:px-3 py-1 bg-zinc-800 rounded-full text-xs sm:text-sm text-zinc-400">Python</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 联系 -->
+  <section id="contact" class="py-16 sm:py-24">
+    <div class="max-w-xl mx-auto px-4 sm:px-6 text-center">
+      <h2 class="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 fade-in">保持联系</h2>
+      <p class="text-muted mb-8 sm:mb-10 fade-in text-sm">有想法？一起聊聊！</p>
+      <div class="flex justify-center gap-4 sm:gap-5 fade-in">
+        <a href="https://github.com/afll" target="_blank" class="w-10 sm:w-12 h-10 sm:h-12 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 hover:scale-110 transition"><i class="fab fa-github text-lg sm:text-xl"></i></a>
+        <a href="https://twitter.com/afll" target="_blank" class="w-10 sm:w-12 h-10 sm:h-12 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 hover:scale-110 transition"><i class="fab fa-twitter text-lg sm:text-xl"></i></a>
+        <a href="mailto:hi@afll.dev" class="w-10 sm:w-12 h-10 sm:h-12 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 hover:scale-110 transition"><i class="fas fa-envelope text-lg sm:text-xl"></i></a>
+        <a href="https://blog.afll.dev" target="_blank" class="w-10 sm:w-12 h-10 sm:h-12 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 hover:scale-110 transition"><i class="fas fa-blog text-lg sm:text-xl"></i></a>
+        <a href="https://t.me/afll" target="_blank" class="w-10 sm:w-12 h-10 sm:h-12 bg-zinc-800 rounded-full flex items-center justify-center hover:bg-zinc-700 hover:scale-110 transition"><i class="fab fa-telegram text-lg sm:text-xl"></i></a>
+      </div>
+      <div class="mt-8 sm:mt-10 p-4 sm:p-6 bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-800 fade-in hover:border-zinc-700 transition-colors">
+        <p class="text-muted mb-1 sm:mb-2 text-sm">或者发邮件给我</p>
+        <a href="mailto:hi@afll.dev" class="text-lg sm:text-xl font-medium text-gradient hover:opacity-80 transition">hi@afll.dev</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="py-6 sm:py-8 border-t border-zinc-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 text-center text-muted text-xs sm:text-sm">
+      © 2026 AFLL · Built with <span class="text-red-500">♥</span> and <span class="text-accent">⚡</span>
+    </div>
+  </footer>
+
+  <script>
+    // 开场动画 - Gemini 宣传片风格
+    (function() {
+      const canvas = document.getElementById('introCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      
+      let frame = 0;
+      const maxFrames = 200;
+      
+      function draw() {
+        // 背景
+        ctx.fillStyle = `rgba(10, 10, 10, ${frame < 150 ? 1 : 0.01})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const t = frame / 60;
+        
+        // 多层螺旋粒子
+        for (let ring = 0; ring < 4; ring++) {
+          const ringOffset = ring * 0.5;
+          const particleCount = 25 + ring * 10;
+          
+          for (let i = 0; i < particleCount; i++) {
+            const p = i / particleCount;
+            const baseAngle = p * Math.PI * 2 * (3 + ring);
+            const angle = baseAngle + t * (1.5 - ring * 0.3) + ringOffset;
+            const effectiveT = Math.max(0, t - ring * 0.3);
+            const radius = 20 + effectiveT * 80 * (p + 0.3) + ring * 30;
+            const size = (2.5 - ring * 0.4) * Math.min(1, effectiveT);
+            const alpha = Math.max(0, Math.min(1, (1 - p * 0.8) * effectiveT * 1.5));
+            
+            if (size > 0.1 && alpha > 0.01) {
+              const x = cx + Math.cos(angle) * radius;
+              const y = cy + Math.sin(angle) * radius;
+              ctx.beginPath();
+              ctx.arc(x, y, size, 0, Math.PI * 2);
+              ctx.fillStyle = (i + ring) % 2 === 0 
+                ? `rgba(0, 212, 255, ${alpha * 0.8})` 
+                : `rgba(139, 92, 246, ${alpha * 0.8})`;
+              ctx.fill();
+            }
+          }
+        }
+        
+        // 中心光晕
+        if (t < 1.5) {
+          const glowSize = 30 + t * 80;
+          const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize);
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${0.8 - t * 0.5})`);
+          gradient.addColorStop(0.3, `rgba(0, 212, 255, ${0.3 - t * 0.15})`);
+          gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        frame++;
+        if (frame < maxFrames) requestAnimationFrame(draw);
+      }
+      
+      draw();
+      
+      setTimeout(() => {
+        document.getElementById('introOverlay').classList.add('hide');
+      }, 2800);
+    })();
+    
+    // 生成粒子
+    const particlesContainer = document.getElementById('particles');
+    const colors = ['cyan', 'purple', 'white'];
+    for (let i = 0; i < 40; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle ' + colors[Math.floor(Math.random() * colors.length)];
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDuration = (Math.random() * 15 + 15) + 's';
+      p.style.animationDelay = Math.random() * 20 + 's';
+      const size = Math.random() * 2 + 1;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      particlesContainer.appendChild(p);
+    }
+    
+    // 生成星星
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 50; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 60 + '%';
+      s.style.animationDelay = Math.random() * 3 + 's';
+      starsContainer.appendChild(s);
+    }
+    
+    // Gemini 风格入场粒子爆发
+    const heroCanvas = document.getElementById('heroCanvas');
+    const ctx = heroCanvas.getContext('2d');
+    heroCanvas.width = window.innerWidth;
+    heroCanvas.height = window.innerHeight;
+    
+    class Particle {
+      constructor() {
+        this.x = heroCanvas.width / 2;
+        this.y = heroCanvas.height / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 3 + 2;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.life = 1;
+        this.decay = Math.random() * 0.02 + 0.01;
+        this.size = Math.random() * 3 + 1;
+        this.color = Math.random() > 0.5 ? '#00d4ff' : '#8b5cf6';
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        this.life -= this.decay;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+        ctx.fillStyle = this.color + Math.floor(this.life * 255).toString(16).padStart(2, '0');
+        ctx.fill();
+      }
+    }
+    
+    let particles = [];
+    let animationStarted = false;
+    
+    function startBurst() {
+      if (animationStarted) return;
+      animationStarted = true;
+      for (let i = 0; i < 80; i++) {
+        particles.push(new Particle());
+      }
+    }
+    
+    function animateParticles() {
+      ctx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      if (particles.length > 0) {
+        requestAnimationFrame(animateParticles);
+      }
+    }
+    
+    setTimeout(() => {
+      startBurst();
+      animateParticles();
+    }, 200);
+    
+    window.addEventListener('resize', () => {
+      heroCanvas.width = window.innerWidth;
+      heroCanvas.height = window.innerHeight;
+    });
+    
+    // 滚动指示器
+    const scrollIndicator = document.getElementById('scrollIndicator');
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      scrollIndicator.style.width = scrollPercent + '%';
+    });
+    
+    window.addEventListener('load', () => {
+      setTimeout(() => document.getElementById('loader').classList.add('hidden'), 300);
+    });
+    
+    const fades = document.querySelectorAll('.fade-in');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          entry.target.querySelectorAll('.progress-bar').forEach(bar => {
+            bar.style.width = bar.dataset.width;
+          });
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+    fades.forEach(el => observer.observe(el));
+    
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('show');
+    });
+    
+    const phrases = ['全栈工程师', '开源爱好者', '技术博主'];
+    let ti = 0, tj = 0, del = false;
+    const typedEl = document.getElementById('typed');
+    function typeEffect() {
+      const txt = phrases[ti];
+      typedEl.textContent = del ? txt.slice(0, tj--) : txt.slice(0, ++tj);
+      if (!del && tj === txt.length) del = true;
+      else if (del && tj === 0) { del = false; ti = (ti + 1) % phrases.length; }
+      setTimeout(typeEffect, del ? 30 : 80);
+    }
+    typeEffect();
+  </script>
+</body>
+</html>
